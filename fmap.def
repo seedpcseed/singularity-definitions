@@ -1,0 +1,41 @@
+Bootstrap: docker
+From: rocker/tidyverse:4.0.4
+
+%environment 
+PATH="/opt/FMAP:/opt/miniconda-4.6.14/bin:$PATH"
+
+%post
+apt-get update -y
+apt-get install -y perl cpanminus wget git curl 
+
+perl -MCPAN -e 'install Statistics::R'
+cpan Bio::DB::Taxonomy
+cpan XML::LibXML
+
+R --slave -e 'install.packages("tidyverse")'
+R --slave -e 'install.packages("stringr", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("getopt", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("purrr", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("log4r", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("utils", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("foreach", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("doParallel", repos="https://cloud.r-project.org/")'
+
+git clone https://github.com/seedpcseed/FMAP /opt/FMAP
+chmod 777 -R /opt/FMAP
+export PATH="PATH="/opt/FMAP:$PATH"
+FMAP_download.pl -m diamond
+
+export PATH="/opt/miniconda-4.6.14/bin:$PATH"
+echo "Downloading Miniconda installer ..."
+conda_installer="/tmp/miniconda.sh"
+curl -fsSL --retry 5 -o "$conda_installer" https://repo.continuum.io/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh
+bash "$conda_installer" -b -p /opt/miniconda-4.6.14
+rm -f "$conda_installer"
+
+conda install -c bioconda -c conda-forge diamond
+
+
+%runscript
+#!/bin/bash
+Rscript --slave "$@"

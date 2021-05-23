@@ -1,0 +1,65 @@
+Bootstrap: docker
+From: rocker/tidyverse:4.0.4
+
+%environment
+export LANG="en_US.UTF-8"
+export LC_ALL="en_US.UTF-8"
+export PATH="$PATH:/SqueezeMeta:/SqueezeMeta/bin:/SqueezeMeta/scripts:/SqueezeMeta/lib:/usr/bin:/opt/miniconda-4.6.14/bin:/SqueezeMeta/bin/megahit/megahit"
+
+%post
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
+apt-get install -y --no-install-recommends \
+    apt-utils bzip2 ca-certificates curl locales libc6 \
+    dpkg libncurses-dev libreadline8 readline-doc \
+    git sqlite3 libxml2-dev libcurl4-openssl-dev tree tree perl \
+    libtie-ixhash-perl libclass-dbi-mysql-perl libxml-parser-perl libxml-libxml-perl libdbd-sqlite3-perl \
+    python3-pip python3-dev python3-scipy python3-matplotlib python3-numpy python3-pandas \
+    openjdk-8-jdk ruby r-base-core \
+    libreadline-dev \
+    git \
+    wget \
+    build-essential \
+    libreadline-dev \
+    unzip
+
+python3 -m pip install future cython
+python3 -m pip install dendropy pysam
+
+apt-get update
+apt-get clean
+
+cpan Linux::MemInfo
+cpan Term::ANSIColor
+
+git clone https://github.com/seedpcseed/SqueezeMeta
+chmod -R 755 /SqueezeMeta
+chmod -R 755 /SqueezeMeta/bin
+
+export PATH="/opt/miniconda-4.6.14/bin:$PATH"
+echo "Downloading Miniconda installer ..."
+conda_installer="/tmp/miniconda.sh"
+curl -fsSL --retry 5 -o "$conda_installer" https://repo.continuum.io/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh
+bash "$conda_installer" -b -p /opt/miniconda-4.6.14
+conda install -c conda-forge mamba
+mamba install -c bioconda python=3.7 rdptools
+mamba install -c bioconda megahit
+
+R --slave -e 'install.packages("stringr", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("getopt", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("purrr", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("log4r", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("utils", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("foreach", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("doParallel", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("ggplot2", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("reshape2", repos="https://cloud.r-project.org/")'
+R --slave -e 'install.packages("doMC", repos="http://cran.us.r-project.org", dependencies = T)'
+R --slave -e 'install.packages("data.table", repos="http://cran.us.r-project.org", dependencies = T)'
+
+R CMD INSTALL /SqueezeMeta/bin/DAS_Tool/package/DASTool_1.1.1.tar.gz
+wget https://github.com/jtamames/SqueezeMeta/files/4757229/SQMtools.tar.gz \
+   && R CMD INSTALL SQMtools*
+
+%runscript
+exec "$@"

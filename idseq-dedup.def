@@ -1,0 +1,32 @@
+Bootstrap: docker
+From: ubuntu:18.04
+
+%environment
+export LANG="en_US.UTF-8"
+export LC_ALL="en_US.UTF-8"
+export PATH="$PATH:/software"
+
+%post
+apt-get update
+DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
+apt-get install -y --no-install-recommends \
+    apt-utils bzip2 ca-certificates curl locales \
+    git \
+    wget \
+    unzip
+
+apt-get update
+apt-get clean
+
+mkdir /software 
+
+wget https://github.com/chanzuckerberg/idseq-dedup/releases/download/v0.1.1/idseq-dedup-Linux -O /software/idseq-dedup
+
+chmod 777 -R /software
+chmod 777 /software/idseq-dedup
+
+
+export PATH=/software:$PATH
+
+%runscript
+exec "$@"
